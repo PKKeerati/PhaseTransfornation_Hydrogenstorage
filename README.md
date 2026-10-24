@@ -273,6 +273,17 @@ temperature), so energies have to be recomputed first.
    full-rate trajectory exists (the file keeps one frame per 1000 steps and has no T or P; a recomputed energy also
    differs slightly if the model is not the one used in the MD).
 
+**Done (`03_mace_descriptors/`, model A3 gen-4).** E only (no PV term yet), recomputed for all 672 frames:
+
+- **E falls 108 meV/atom, with no flat induction period** — no sign of an energy barrier here.
+- **The fall has two stages.**
+  1. **Steps 0–60k:** the crystalline-rutile cluster grows.
+  2. **Steps 245k–300k:** a sharp drop of ~40 meV/atom. The box shape and the cluster size are both already constant
+     here, so this is an ordering event inside existing domains that the cluster counts do not see.
+- **Per-atom energies separate the phases:** hcp-like Mg −1.37 eV, rutile-like Mg −1.67 eV.
+- **The MACE embedding behaves like CN** as a descriptor (per-atom agreement 0.95). Its "nucleation time" depends
+  entirely on the cutoff (`03_mace_descriptors/README.md`; comparison in `04_descriptor_comparison/`).
+
 ### 5.5 Suggested first steps
 
 1. Read the trajectory; build the Mg–H and Mg–Mg graphs per frame (periodic distances); reproduce the CN numbers.
@@ -282,7 +293,9 @@ temperature), so energies have to be recomputed first.
 3. β₀/β₁ vs time at one fixed radius (CROCKER row) for the Mg–Mg and Mg–H complexes, plus persistence diagrams of
    perfect hcp and rutile cells as references.
 4. ~~Largest rutile cluster n_max(t) over the first 150 frames~~ — done in `02_graph_laplacian_clustering/` (`glc_cn_nucleus.png`).
-5. Energy vs time next to the phase fractions, plus per-atom energy maps (§5.4; Keerati to recompute with MACE).
+5. ~~Energy vs time next to the phase fractions, plus per-atom energy maps~~ — done (§5.4, `03_mace_descriptors/`).
+   Open: what structural change causes the second energy drop at steps 245k–300k? Also, a threshold-free way to
+   split a continuous descriptor (all three descriptors in `04_descriptor_comparison/` need a cutoff).
 6. Then ask for a trajectory that starts from a metastable state for true nucleation statistics and ΔG(n)
    (Keerati to provide).
 
@@ -358,8 +371,25 @@ PhaseTransfornation_Hydrogenstorage/
     ├── graph_laplacian_clustering.py  (reads the 01 trajectory; reuses its reader)
     ├── glc_cn.mp4                     (20 MB — movie of the spectral classes)
     ├── glc_cn.csv, glc_cn_{spectrum,fractions,nucleus,final}.png      (CN feature, main result)
-    └── glc_soap.csv, glc_soap_{spectrum,fractions,nucleus,final}.png  (SOAP feature, comparison)
+│   ├── glc_soap.csv, glc_soap_{spectrum,fractions,nucleus,final}.png  (SOAP feature, comparison)
+│   └── glc_mace.csv, glc_mace_{spectrum,fractions,nucleus,final}.png  (MACE feature, from 03)
+├── models/
+│   └── A3g4_ft_MACE_mh_stagetwo.model (57 MB — fine-tuned MACE A3 gen-4, from Hydrogen_Storage-/05_finetuning)
+├── 03_mace_descriptors/               ← MACE embedding as descriptor + per-atom energies (§5.4)
+│   ├── README.md
+│   ├── compute_mace_descriptors.py    (conda env `mace`), plot_mace_results.py, plot_mace_movie.py
+│   ├── mace_A3g4.npz                  (46 MB)
+│   ├── mace_A3g4.mp4                  (20 MB)
+│   └── mace_A3g4_{energy,node_energy,descriptor}.png
+└── 04_descriptor_comparison/          ← CN vs SOAP vs MACE on the same trajectory, same rule
+    ├── README.md
+    ├── compare_descriptors_movie.py
+    ├── compare_descriptors.mp4        (27 MB)
+    └── compare_descriptors.{png,csv}
 ```
+
+Large files (extxyz, model, npz, mp4) should go through Git LFS if the repo is pushed to GitHub (100 MB file limit;
+the repo is ~260 MB in total).
 
 **References to start from.** Bartók, Kondor & Csányi, *PRB* 87, 184115 (2013) — SOAP. Steinhardt, Nelson & Ronchetti,
 *PRB* 28, 784 (1983) — q₄/q₆. Carlsson & de Silva, *Found. Comput. Math.* 10, 367 (2010) — zigzag persistence.
