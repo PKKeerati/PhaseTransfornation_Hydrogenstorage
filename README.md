@@ -278,8 +278,12 @@ temperature), so energies have to be recomputed first.
 - **E falls 108 meV/atom, with no flat induction period** — no sign of an energy barrier here.
 - **The fall has two stages.**
   1. **Steps 0–60k:** the crystalline-rutile cluster grows.
-  2. **Steps 245k–300k:** a sharp drop of ~40 meV/atom. The box shape and the cluster size are both already constant
-     here, so this is an ordering event inside existing domains that the cluster counts do not see.
+  2. **Steps 245k–300k:** a sharp drop of ~40 meV/atom, entirely in the hydride. The box shape and the cluster size
+     are both already constant. Cause: **the rutile grains align into one c-axis orientation**. In math terms, a
+     **nematic order parameter S of the Mg–Mg chain bonds switches from 0.04 to 0.19 — orientational symmetry
+     breaking**. In the same window the atoms move about 3× less and the over-coordinated defects heal
+     (`03_mace_descriptors/energy_drop.png`). This comes after a ~200k-step wait, so it is the most nucleation-like
+     event in the run — with orientation, not cluster size, as the order parameter.
 - **Per-atom energies separate the phases:** hcp-like Mg −1.37 eV, rutile-like Mg −1.67 eV.
 - **The MACE embedding behaves like CN** as a descriptor (per-atom agreement 0.95). Its "nucleation time" depends
   entirely on the cutoff (`03_mace_descriptors/README.md`; comparison in `04_descriptor_comparison/`).
@@ -294,8 +298,10 @@ temperature), so energies have to be recomputed first.
    perfect hcp and rutile cells as references.
 4. ~~Largest rutile cluster n_max(t) over the first 150 frames~~ — done in `02_graph_laplacian_clustering/` (`glc_cn_nucleus.png`).
 5. ~~Energy vs time next to the phase fractions, plus per-atom energy maps~~ — done (§5.4, `03_mace_descriptors/`).
-   Open: what structural change causes the second energy drop at steps 245k–300k? Also, a threshold-free way to
-   split a continuous descriptor (all three descriptors in `04_descriptor_comparison/` need a cutoff).
+   The second energy drop (245k–300k) is the grains aligning into one orientation (§5.4). Open: (i) a threshold-free
+   way to split a continuous descriptor (all three descriptors in `04_descriptor_comparison/` need a cutoff);
+   (ii) a per-atom orientation field, i.e. a grain map with the boundaries as the cut, to watch the winning grain grow
+   — a natural graph-Laplacian problem with orientation as the node feature.
 6. Then ask for a trajectory that starts from a metastable state for true nucleation statistics and ΔG(n)
    (Keerati to provide).
 
@@ -380,7 +386,8 @@ PhaseTransfornation_Hydrogenstorage/
 │   ├── compute_mace_descriptors.py    (conda env `mace`), plot_mace_results.py, plot_mace_movie.py
 │   ├── mace_A3g4.npz                  (46 MB)
 │   ├── mace_A3g4.mp4                  (20 MB)
-│   └── mace_A3g4_{energy,node_energy,descriptor}.png
+│   ├── mace_A3g4_{energy,node_energy,descriptor}.png
+│   └── analyse_energy_drop.py → energy_drop.{png,csv}   (cause of the 250k energy drop)
 └── 04_descriptor_comparison/          ← CN vs SOAP vs MACE on the same trajectory, same rule
     ├── README.md
     ├── compare_descriptors_movie.py

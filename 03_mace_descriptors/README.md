@@ -33,11 +33,54 @@ one**), and the per-atom energies are used as a second node feature.
      hcp-like and rutile-like Mg drop here; hcp-like Mg also has an earlier drop near step 150k.
 
   So the energy picks up an **ordering event inside domains that already exist**, which the cluster counts miss.
-  What changes structurally is not identified yet — this is open.
+  See the next section.
 - **Descriptor space** (`mace_A3g4_descriptor.png`): at step 0 the Mg spread continuously from hcp-like to rutile-like.
   By the end they form two separate groups, with a sparse bridge of intermediate (interface) Mg.
 - **No nucleation event.** As with CN, the MACE-rutile cluster is already ≥ 100 Mg at step 0 with dcut 6.5: MACE sees
   the local MgH₆ octahedra that already exist in the random start.
+
+### What causes the second drop (steps 245k–300k)
+
+`analyse_energy_drop.py` → `energy_drop.png`, `energy_drop.csv`. Hydride = Mg with ≥ 5 H, plus all H.
+
+| quantity | 200–245k | 300–345k |
+|---|---|---|
+| Σ per-atom energy, hydride / hcp-like Mg (eV) | −2083.8 / −310.8 | −2126.0 / −309.3 |
+| chain order S of the rutile c-axis (Mg–Mg chains at 3.0 Å) | 0.04 | 0.19 |
+| director (\|x\|, \|y\|, \|z\|) | wanders, (0.29, 0.45, 0.72) on average | locked at (0.29, 0.90, 0.31) |
+| MSD per 1000 steps, hydride Mg / H (Å²) | 1.14 / 2.68 | 0.39 / 0.89 |
+| Mg with ≥ 7 H / H with ≥ 4 Mg (ideal: 6 H / 3 Mg) | 74 / 156 | 45 / 111 |
+| SOAP `dist_rutile` of hydride Mg | 777 | 675 |
+
+**The drop happens entirely in the hydride (−42 eV); the hcp Mg does not change.** In the same window:
+
+- **The rutile chains align.** Before, their directions are random and the averaged direction wanders between y and z.
+  After, one direction is chosen, close to y, and stays fixed for the rest of the run.
+  In math terms: **a nematic order parameter (the largest eigenvalue of the orientation tensor) switches from ≈ 0 to a
+  finite value — orientational symmetry breaking**.
+- **Atoms move about 3× less.**
+- **Over-coordinated defects heal.**
+
+The smoothed curves cross their midpoints together: S > 0.1 at step 267k, H MSD < 1.5 Å² at step 269k.
+
+**Interpretation.** Up to ~245k the hydride slab is locally MgH₆/rutile-like (CN and SOAP already say so). But it is a
+**mobile, polycrystalline (orientationally disordered) solid**: small rutile grains with different orientations that
+keep rearranging, with many grain-boundary defects (Mg with 7 H, H with 4 Mg). At ~250–300k the grains **coarsen into
+one orientation** (grain coalescence / recrystallisation). Grain boundaries disappear, the over-coordinated sites heal,
+diffusion freezes, and the energy falls by ~40 meV per atom of the whole cell (~80 meV per hydride atom).
+
+**This is a second, separate ordering step.** The sequence is: composition first (H-rich domain at step 0), then local
+rutile order (SOAP cluster, 10–60k), then long-range orientation (250–300k). Only the last step has an
+induction-like wait (~200k steps of nothing, then a fast change) — the closest thing to a nucleation event in this
+run. Here the "nucleus" would be a grain of the winning orientation (**the order parameter is S or the director, not
+a cluster size**).
+
+**Caveats.**
+- S = 0.19 is far from 1. The 3.25 Å bond cutoff also catches some non-chain Mg–Mg pairs (3.45 Å at 0 K, broadened
+  by temperature), and the slab is strained in a box that does not fit rutile. So S tracks the change but does not
+  measure the fraction of aligned crystal.
+- The MSD includes vibrations and any MC moves, so it is a relative mobility measure, not a diffusion coefficient.
+- One trajectory: the orientation chosen (≈ y) and the timing are single samples.
 
 ### The cutoff decides the "nucleation time" (warning)
 
@@ -61,6 +104,7 @@ topic for Nan (a density-based or Gaussian-mixture split, or a committor-based c
 | `compute_mace_descriptors.py` | descriptors + energies → `mace_A3g4.npz` (env `mace`; ~8 s/frame, ~6 GB RAM) |
 | `mace_A3g4.npz` | 46 MB; `d_hcp`, `d_rutile` (672 × 512), `pca` (672 × 1024 × 16), `node_energy`, `energy`, `volume`, references |
 | `plot_mace_results.py` | → `mace_A3g4_energy.png`, `mace_A3g4_node_energy.png`, `mace_A3g4_descriptor.png` |
+| `analyse_energy_drop.py` | → `energy_drop.png`, `energy_drop.csv`: hydride energy, chain order S, director, MSD, defects vs step |
 | `plot_mace_movie.py` | → `mace_A3g4.mp4` (20 MB): MACE classes, per-atom energy map, fractions / energy / cluster vs step |
 
 ## Run
