@@ -356,6 +356,7 @@ PhaseTransfornation_Hydrogenstorage/
 └── 02_graph_laplacian_clustering/     ← spectral clustering + rutile cluster sizes (§5.1)
     ├── README.md
     ├── graph_laplacian_clustering.py  (reads the 01 trajectory; reuses its reader)
+    ├── glc_cn.mp4                     (20 MB — movie of the spectral classes)
     ├── glc_cn.csv, glc_cn_{spectrum,fractions,nucleus,final}.png      (CN feature, main result)
     └── glc_soap.csv, glc_soap_{spectrum,fractions,nucleus,final}.png  (SOAP feature, comparison)
 ```

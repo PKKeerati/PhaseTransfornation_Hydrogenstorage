@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Graph-Laplacian (spectral) clustering of the Mg (hcp) / MgH2 (rutile) phase separation.
 
-Usage:  python graph_laplacian_clustering.py [EXTXYZ] [--feature cn|soap] [--k 2] [--window 5]
+Usage:  python graph_laplacian_clustering.py [EXTXYZ] [--feature cn|soap|mace] [--k 2] [--window 5]
                                              [--rc-mgmg 4.1] [--rc-mgh 2.6] [--sigma-cn 1.0]
                                              [--sigma-soap 0.5]
   EXTXYZ  SOAP-tagged MD trajectory (default: ../01_structure_phase_transition/soap.2.md.064.diff.extxyz).
@@ -12,8 +12,11 @@ Method, per saved frame (Mg atoms only are nodes):
   2. Node feature f_i, centred time average over --window frames:
        cn   : Mg-H coordination number (H within --rc-mgh, first minimum of the Mg-H RDF, 2.6 A)
        soap : (log d_hcp, log d_rutile) from the stored SOAP distances
+       mace : (d_hcp, d_rutile) distances of the MACE A3 gen-4 invariant descriptor to perfect hcp /
+              rutile references (../03_mace_descriptors/mace_A3g4.npz)
   3. Edge weight w_ij = exp(-|f_i - f_j|^2 / (2 sigma^2)), fixed sigma (--sigma-cn in H atoms,
-     --sigma-soap in log units), so weights are comparable between frames.
+     --sigma-soap in log units, --sigma-mace in descriptor units), so weights are comparable
+     between frames.
   4. Normalised Laplacian L = I - D^-1/2 W D^-1/2; eigenvectors of the k smallest eigenvalues,
      rows normalised (Ng-Jordan-Weiss), k-means (10 restarts) -> k clusters.
   5. Clusters named by mean Mg-H CN: lowest = hcp, highest = rutile (k > 2: the rest = interface).
@@ -71,13 +74,16 @@ N_EIG = 6
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("extxyz", nargs="?", default=os.path.join(SRC, "soap.2.md.064.diff.extxyz"))
-    p.add_argument("--feature", choices=["cn", "soap"], default="cn")
+    p.add_argument("--feature", choices=["cn", "soap", "mace"], default="cn")
     p.add_argument("--k", type=int, default=2, help="number of clusters")
     p.add_argument("--window", type=int, default=5, help="time-averaging window, saved frames")
     p.add_argument("--rc-mgmg", type=float, default=4.1, help="Mg-Mg edge cutoff (A)")
     p.add_argument("--rc-mgh", type=float, default=2.6, help="Mg-H cutoff for CN (A)")
     p.add_argument("--sigma-cn", type=float, default=1.0, help="weight scale for CN (H atoms)")
     p.add_argument("--sigma-soap", type=float, default=0.5, help="weight scale for log SOAP distance")
+    p.add_argument("--sigma-mace", type=float, default=2.0,
+                   help="weight scale for MACE descriptor distance (hcp-rutile reference gap 12.9)")
+    p.add_argument("--mace-npz", default=os.path.join(HERE, "..", "03_mace_descriptors", "mace_A3g4.npz"))
     p.add_argument("--dcut", type=float, default=600.0, help="SOAP cutoff of the 01 baseline")
     p.add_argument("--no-movie", action="store_true", help="skip the MP4")
     p.add_argument("--fps", type=int, default=24)
@@ -143,8 +149,14 @@ def main():
     cn_cls = np.where(cn_s >= 4, 1, np.where(cn_s <= 1, 0, 2))           # CN threshold baseline
     if a.feature == "cn":
         feat, sigma = cn_s[..., None], a.sigma_cn
-    else:
+    elif a.feature == "soap":
         feat, sigma = np.stack([np.log(dh), np.log(dr)], -1), a.sigma_soap
+    else:
+        md = np.load(a.mace_npz)
+        if not np.array_equal(md["timestep"], ts):
+            sys.exit(f"{a.mace_npz} does not cover every frame of {a.extxyz} (run without --stride)")
+        feat = np.stack([moving_average(md["d_hcp"], a.window), moving_average(md["d_rutile"], a.window)], -1)
+        sigma = a.sigma_mace
 
     lam = np.zeros((F, N_EIG))
     cls = np.zeros((F, nmg), int)        # 0 hcp, 1 rutile, 2 interface (boundary nodes)

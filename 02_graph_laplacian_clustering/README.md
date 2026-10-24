@@ -4,7 +4,10 @@ First pass (2026-10-24) of §5.1 of the main [README](../README.md), run on the 
 `../01_structure_phase_transition/soap.2.md.064.diff.extxyz` (Mg₅₁₂H₅₁₂, 672 frames, steps 0–671 000).
 
 **Run:** `python graph_laplacian_clustering.py --feature cn` (or `--feature soap`); conda env `PEM`
-(numpy, scipy, matplotlib; ~1 min). Outputs `glc_<feature>.csv` and `glc_<feature>_{spectrum,fractions,nucleus,final}.png`.
+(numpy, scipy, matplotlib, imageio-ffmpeg; ~1 min + ~3 min for the movie). Outputs `glc_<feature>.csv`,
+`glc_<feature>_{spectrum,fractions,nucleus,final}.png` and **`glc_<feature>.mp4`** (atoms seen along z, Mg coloured
+hcp / rutile / interface by the spectral clustering, H small yellow; below: phase fractions and λ₂, λ₃ vs step with a
+time cursor; title shows λ₃/λ₂). Use `--no-movie` to skip the movie, and `--stride 2` for a shorter one. Only `glc_cn.mp4` (20 MB) is kept.
 
 ## Method
 
